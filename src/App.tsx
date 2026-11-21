@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Copy,
   ExternalLink,
   Mail,
   MapPin,
@@ -48,8 +49,8 @@ const filterOptions = ['Vegetariano', 'Picante', 'Contiene pescado', 'Especial',
 const featuredMenus = [
   { id: 109, image: foodImages[1], label: 'Una selección para disfrutar sin prisa' },
   { id: 110, image: foodImages[2], label: 'Una mesa que invita a compartir' },
-  { id: 108, image: foodImages[0], label: 'Clásicos japoneses para compartir' },
 ];
+const galleryImages = foodImages.slice(3);
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(price);
 const whatsappPhone = restaurant.phoneInternational.replace(/\D/g, '');
@@ -177,10 +178,10 @@ export default function App() {
         setGalleryIndex(null);
       }
       if (galleryIndex !== null && event.key === 'ArrowRight') {
-        setGalleryIndex((galleryIndex + 1) % foodImages.length);
+        setGalleryIndex((galleryIndex + 1) % galleryImages.length);
       }
       if (galleryIndex !== null && event.key === 'ArrowLeft') {
-        setGalleryIndex((galleryIndex - 1 + foodImages.length) % foodImages.length);
+        setGalleryIndex((galleryIndex - 1 + galleryImages.length) % galleryImages.length);
       }
     };
 
@@ -246,7 +247,7 @@ export default function App() {
       '',
       ...lines,
       '',
-      `Total orientativo de demostración: ${formatPrice(total)}`,
+      `Total de referencia pendiente: ${formatPrice(total)}`,
       'Precios, disponibilidad e importe pendientes de confirmación por el restaurante.',
       '',
       `Nombre: ${order.name}`,
@@ -379,12 +380,9 @@ export default function App() {
               <button
                 className="btn glass"
                 type="button"
-                onClick={() => {
-                  setOrderStep('cart');
-                  setCartOpen(true);
-                }}
+                onClick={() => scrollTo('reservas')}
               >
-                <ShoppingBag size={17} aria-hidden="true" /> Preparar pedido
+                <CalendarDays size={17} aria-hidden="true" /> Reservar mesa
               </button>
             </div>
           </div>
@@ -446,7 +444,8 @@ export default function App() {
             <span className="notice-mark" aria-hidden="true">!</span>
             <p>
               <strong>Información pendiente de validación.</strong> Esta carta es de demostración:
-              nombres, descripciones y precios no son oficiales. Ingredientes y alérgenos están
+              nombres y descripciones no son oficiales. Todos los precios son referencias pendientes
+              de confirmación y no una tarifa vigente. Ingredientes y alérgenos también están
               pendientes de confirmación directa con el restaurante.
             </p>
           </div>
@@ -508,7 +507,7 @@ export default function App() {
                     {product.pieces && <span className="pieces">{product.pieces}</span>}
                   </div>
                   <div className="product-actions">
-                    <span className="price-caption">Precio demo</span>
+                    <span className="price-caption">Referencia pendiente</span>
                     <strong>{formatPrice(product.price)}</strong>
                     <button
                       className="add-button"
@@ -575,7 +574,7 @@ export default function App() {
                     <p className="menu-editorial">{label}</p>
                     {product.pieces && <span className="pieces">{product.pieces}</span>}
                     <div className="menu-footer">
-                      <span><small>Precio demo</small><strong>{formatPrice(product.price)}</strong></span>
+                      <span><small>Referencia pendiente</small><strong>{formatPrice(product.price)}</strong></span>
                       <button
                         type="button"
                         onClick={() => changeQty(product.id, 1)}
@@ -732,10 +731,10 @@ export default function App() {
               <p className="eyebrow dark">GALERÍA EDITORIAL</p>
               <h2>Un festín para los sentidos.</h2>
             </div>
-            <p>Cinco imágenes gastronómicas seleccionadas para inspirar. Ninguna se atribuye al restaurante.</p>
+            <p>Dos imágenes gastronómicas ilustrativas. Ninguna se atribuye al restaurante.</p>
           </div>
           <div className="gallery-grid">
-            {foodImages.map((image, index) => (
+            {galleryImages.map((image, index) => (
               <button
                 className={`gallery-item g${index + 1}`}
                 key={image.src}
@@ -757,14 +756,11 @@ export default function App() {
 
         <section className="social section">
           <div>
-            <p className="eyebrow dark">SIGUE EN CONTACTO</p>
+            <p className="eyebrow dark">CONTACTO DIRECTO</p>
             <h2>Nos vemos<br />en la mesa.</h2>
+            <p className="social-note">No hemos podido verificar un perfil social oficial. Contacta directamente con el restaurante.</p>
           </div>
           <div className="social-links">
-            <a href={restaurant.facebook} target="_blank" rel="noreferrer">
-              <span className="social-letter" aria-hidden="true">f</span> Facebook
-              <ExternalLink size={14} aria-hidden="true" />
-            </a>
             <a href={`mailto:${restaurant.email}`}>
               <Mail size={18} aria-hidden="true" /> Contactar por correo
             </a>
@@ -784,6 +780,14 @@ export default function App() {
             <p className="eyebrow dark">ENCUÉNTRANOS</p>
             <h2>Una dirección<br />para recordar.</h2>
             <address><MapPin size={18} aria-hidden="true" /><span>{restaurant.address}<br />{restaurant.postal}</span></address>
+            <button
+              className="copy-address"
+              type="button"
+              onClick={() => copyText(`${restaurant.address}, ${restaurant.postal}`, 'Dirección copiada.')}
+            >
+              <Copy size={15} aria-hidden="true" /> Copiar dirección
+            </button>
+            {copyFeedback && <p className="copy-feedback" role="status">{copyFeedback}</p>}
             <a href={`tel:${restaurant.phoneInternational}`}><Phone size={17} aria-hidden="true" />{restaurant.phone}</a>
             <a href={`mailto:${restaurant.email}`}><Mail size={17} aria-hidden="true" />{restaurant.email}</a>
             <div className="hours">
@@ -791,6 +795,14 @@ export default function App() {
               <div><strong>Horario</strong><span>{restaurant.hoursStatus}</span></div>
             </div>
             <div className="contact-actions">
+              <a
+                className="btn whatsapp"
+                href={whatsappUrl('Hola, You Sushi Sevilla. Quisiera hacer una consulta.')}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <MessageCircle size={16} aria-hidden="true" /> WhatsApp
+              </a>
               <a className="btn red" href={restaurant.maps} target="_blank" rel="noreferrer">
                 Cómo llegar <ArrowRight size={16} aria-hidden="true" />
               </a>
@@ -916,22 +928,22 @@ export default function App() {
             <button
               className="light-nav left"
               type="button"
-              onClick={() => setGalleryIndex((galleryIndex - 1 + foodImages.length) % foodImages.length)}
+              onClick={() => setGalleryIndex((galleryIndex - 1 + galleryImages.length) % galleryImages.length)}
               aria-label="Fotografía anterior"
             >
               <ChevronLeft />
             </button>
             <SafeImage
-              src={foodImages[galleryIndex].src}
-              alt={`${foodImages[galleryIndex].alt}; fotografía ilustrativa de Unsplash`}
+              src={galleryImages[galleryIndex].src}
+              alt={`${galleryImages[galleryIndex].alt}; fotografía ilustrativa de Unsplash`}
               width={1600}
               height={1600}
             />
-            <p>{foodImages[galleryIndex].title} · Imagen ilustrativa</p>
+            <p>{galleryImages[galleryIndex].title} · Imagen ilustrativa</p>
             <button
               className="light-nav right"
               type="button"
-              onClick={() => setGalleryIndex((galleryIndex + 1) % foodImages.length)}
+              onClick={() => setGalleryIndex((galleryIndex + 1) % galleryImages.length)}
               aria-label="Fotografía siguiente"
             >
               <ChevronRight />
@@ -980,7 +992,7 @@ export default function App() {
                         <div className="cart-item-number" aria-hidden="true">{String(product.id).padStart(2, '0')}</div>
                         <div className="cart-item-copy">
                           <strong>{product.name}</strong>
-                          <span>{formatPrice(product.price)} · precio demo</span>
+                          <span>{formatPrice(product.price)} · referencia pendiente</span>
                           <div className="qty">
                             <button type="button" onClick={() => changeQty(product.id, -1)} aria-label={`Restar ${product.name}`}>
                               <Minus size={14} />
@@ -1005,7 +1017,7 @@ export default function App() {
                   <div className="cart-summary">
                     <p>Importes de demostración, pendientes de confirmación.</p>
                     <div><span>Subtotal orientativo</span><strong>{formatPrice(total)}</strong></div>
-                    <div><span>Total orientativo</span><strong>{formatPrice(total)}</strong></div>
+                    <div><span>Total de referencia pendiente</span><strong>{formatPrice(total)}</strong></div>
                   </div>
                   <div className="cart-actions">
                     <button className="btn red" type="button" onClick={() => setOrderStep('details')}>
@@ -1064,7 +1076,7 @@ export default function App() {
                   ))}
                 </div>
                 <div className="summary-total">
-                  <span>Total orientativo · demo</span><strong>{formatPrice(total)}</strong>
+                  <span>Total de referencia pendiente</span><strong>{formatPrice(total)}</strong>
                 </div>
                 {order.notes && <p><strong>Observaciones:</strong> {order.notes}</p>}
                 <p><strong>Alergias:</strong> {order.allergies || 'Ninguna indicada'}</p>
