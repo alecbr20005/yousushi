@@ -1,197 +1,1092 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, PointerEvent } from 'react';
 import {
-  ArrowRight, CalendarDays,   ChevronLeft, ChevronRight, Clock3,
-  Mail, MapPin, Menu, Minus, Phone, Plus, Search, ShoppingBag,
-  Trash2, UtensilsCrossed, X,
+  ArrowRight,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  ExternalLink,
+  Mail,
+  MapPin,
+  Menu,
+  MessageCircle,
+  Minus,
+  Phone,
+  Plus,
+  Search,
+  ShoppingBag,
+  Trash2,
+  UtensilsCrossed,
+  X,
 } from 'lucide-react';
+import { foodImages } from './data/foodImages';
 import { menus, products } from './data/products';
 import type { Product } from './data/products';
 import { restaurant } from './data/restaurant';
 
-const heroImage = 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1800&q=88';
-const interiorImage = 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=86';
-
 const allProducts = [...products, ...menus];
-const categories = ['Todos','Entrantes','Ensaladas','Sopas y ramen','Platos calientes','Frituras y tempuras','Nigiris','Maki','California rolls','Sashimi','Combinados y bandejas','Pokes','Especialidades','Bebidas','Menús individuales','Menús para compartir'];
-const filterOptions = ['Vegetariano','Picante','Contiene pescado','Especial','Combos'];
+const categories = [
+  'Todos',
+  'Entrantes',
+  'Ensaladas',
+  'Sopas y ramen',
+  'Platos calientes',
+  'Frituras y tempuras',
+  'Nigiris',
+  'Maki',
+  'California rolls',
+  'Sashimi',
+  'Combinados y bandejas',
+  'Pokes',
+  'Especialidades',
+  'Bebidas',
+  'Menús individuales',
+  'Menús para compartir',
+];
+const filterOptions = ['Vegetariano', 'Picante', 'Contiene pescado', 'Especial', 'Combos'];
+const featuredMenus = [
+  { id: 109, image: foodImages[1], label: 'Una selección para disfrutar sin prisa' },
+  { id: 110, image: foodImages[2], label: 'Una mesa que invita a compartir' },
+  { id: 108, image: foodImages[0], label: 'Clásicos japoneses para compartir' },
+];
+const formatPrice = (price: number) =>
+  new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(price);
+const whatsappPhone = restaurant.phoneInternational.replace(/\D/g, '');
+const localToday = () => {
+  const date = new Date();
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 10);
+};
 
-function SafeImage({src,alt,className=''}:{src:string;alt:string;className?:string}) {
-  const [failed,setFailed] = useState(false);
-  return failed
-    ? <div className={`image-fallback ${className}`} role="img" aria-label={alt}><UtensilsCrossed/><span>{alt}</span></div>
-    : <img className={className} src={src} alt={alt} loading="lazy" onError={()=>setFailed(true)} />;
+function SafeImage({
+  src,
+  alt,
+  className = '',
+  width = 1600,
+  height = 1600,
+  eager = false,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  width?: number;
+  height?: number;
+  eager?: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <div className={`image-fallback ${className}`} role="img" aria-label={alt}>
+        <UtensilsCrossed aria-hidden="true" />
+        <span>Imagen no disponible</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      className={className}
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      loading={eager ? 'eager' : 'lazy'}
+      fetchPriority={eager ? 'high' : undefined}
+      decoding="async"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
+function handlePhotoMove(event: PointerEvent<HTMLDivElement>) {
+  if (
+    event.pointerType !== 'mouse' ||
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) {
+    return;
+  }
+
+  const bounds = event.currentTarget.getBoundingClientRect();
+  const x = (event.clientX - bounds.left) / bounds.width;
+  const y = (event.clientY - bounds.top) / bounds.height;
+  event.currentTarget.style.setProperty('--tilt-x', `${(0.5 - y) * 2.4}deg`);
+  event.currentTarget.style.setProperty('--tilt-y', `${(x - 0.5) * 2.4}deg`);
+  event.currentTarget.style.setProperty('--image-x', `${(0.5 - x) * 7}px`);
+  event.currentTarget.style.setProperty('--image-y', `${(0.5 - y) * 7}px`);
+}
+
+function handlePhotoLeave(event: PointerEvent<HTMLDivElement>) {
+  event.currentTarget.style.removeProperty('--tilt-x');
+  event.currentTarget.style.removeProperty('--tilt-y');
+  event.currentTarget.style.removeProperty('--image-x');
+  event.currentTarget.style.removeProperty('--image-y');
 }
 
 export default function App() {
-  const [mobileOpen,setMobileOpen] = useState(false);
-  const [search,setSearch] = useState('');
-  const [category,setCategory] = useState('Todos');
-  const [preference,setPreference] = useState('');
-  const [selected,setSelected] = useState<Product|null>(null);
-  const [modalQty,setModalQty] = useState(1);
-  const [cartOpen,setCartOpen] = useState(false);
-  const [orderStep,setOrderStep] = useState<'cart'|'details'|'summary'>('cart');
-  const [cart,setCart] = useState<Record<number,number>>(()=>{
-    try{return JSON.parse(localStorage.getItem('you-sushi-cart') || '{}')}catch{return {}}
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('Todos');
+  const [preference, setPreference] = useState('');
+  const [selected, setSelected] = useState<Product | null>(null);
+  const [modalQty, setModalQty] = useState(1);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [orderStep, setOrderStep] = useState<'cart' | 'details' | 'summary'>('cart');
+  const [cart, setCart] = useState<Record<number, number>>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('you-sushi-cart') || '{}');
+      return saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+    } catch {
+      return {};
+    }
   });
-  const [galleryIndex,setGalleryIndex]=useState<number|null>(null);
-  const [reservationReady,setReservationReady]=useState(false);
-  const [reservationErrors,setReservationErrors]=useState<Record<string,string>>({});
-  const [reservation,setReservation]=useState({name:'',phone:'',date:'',time:'',people:'2',comment:''});
-  const [order,setOrder]=useState({name:'',phone:'',mode:'Recoger en el restaurante',time:'',notes:'',allergies:''});
-  const [copyFeedback,setCopyFeedback]=useState('');
+  const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
+  const [reservationReady, setReservationReady] = useState(false);
+  const [reservationErrors, setReservationErrors] = useState<Record<string, string>>({});
+  const [reservation, setReservation] = useState({
+    name: '',
+    phone: '',
+    date: '',
+    time: '',
+    people: '2',
+    comment: '',
+  });
+  const [order, setOrder] = useState({
+    name: '',
+    phone: '',
+    mode: 'Recoger en el restaurante',
+    time: '',
+    notes: '',
+    allergies: '',
+  });
+  const [copyFeedback, setCopyFeedback] = useState('');
 
-  useEffect(()=>localStorage.setItem('you-sushi-cart',JSON.stringify(cart)),[cart]);
-  useEffect(()=>{
-    if(!selected && !cartOpen && galleryIndex===null)return;
-    const previous=document.activeElement as HTMLElement|null;
+  useEffect(() => {
+    localStorage.setItem('you-sushi-cart', JSON.stringify(cart));
+  }, [cart]);
+
+  useEffect(() => {
+    if (!selected && !cartOpen && galleryIndex === null) return;
+
+    const previous = document.activeElement as HTMLElement | null;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSelected(null);
+        setCartOpen(false);
+        setGalleryIndex(null);
+      }
+      if (galleryIndex !== null && event.key === 'ArrowRight') {
+        setGalleryIndex((galleryIndex + 1) % foodImages.length);
+      }
+      if (galleryIndex !== null && event.key === 'ArrowLeft') {
+        setGalleryIndex((galleryIndex - 1 + foodImages.length) % foodImages.length);
+      }
+    };
+
     document.body.classList.add('modal-open');
-    return()=>{document.body.classList.remove('modal-open');previous?.focus()};
-  },[selected,cartOpen,galleryIndex]);
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.classList.remove('modal-open');
+      window.removeEventListener('keydown', closeOnEscape);
+      previous?.focus();
+    };
+  }, [selected, cartOpen, galleryIndex]);
 
-  const filtered=useMemo(()=>allProducts.filter(p=>{
-    const term=search.trim().toLowerCase();
-    const matchesSearch=!term || [p.name,p.description,p.ingredients,p.category].some(v=>v.toLowerCase().includes(term));
-    const matchesCategory=category==='Todos'||p.category===category;
-    const matchesPreference=!preference || (p.verified && p.tags.some(t=>t.toLowerCase().includes(preference.toLowerCase())));
-    return matchesSearch&&matchesCategory&&matchesPreference;
-  }),[search,category,preference]);
+  const filtered = useMemo(
+    () =>
+      allProducts.filter((product) => {
+        const term = search.trim().toLowerCase();
+        const matchesSearch =
+          !term ||
+          [product.name, product.description, product.ingredients, product.category].some((value) =>
+            value.toLowerCase().includes(term),
+          );
+        const matchesCategory = category === 'Todos' || product.category === category;
+        const matchesPreference =
+          !preference ||
+          product.tags.some((tag) => tag.toLowerCase().includes(preference.toLowerCase()));
+        return matchesSearch && matchesCategory && matchesPreference;
+      }),
+    [search, category, preference],
+  );
 
-  const count=Object.values(cart).reduce((sum,q)=>sum+q,0);
-  const total=allProducts.reduce((sum,p)=>sum+(cart[p.id]||0)*p.price,0);
-  const cartItems=allProducts.filter(p=>cart[p.id]);
+  const count = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
+  const total = allProducts.reduce(
+    (sum, product) => sum + (cart[product.id] || 0) * product.price,
+    0,
+  );
+  const cartItems = allProducts.filter((product) => cart[product.id]);
 
-  const changeQty=(id:number,delta:number)=>{
-    setCart(current=>{
-      const next=(current[id]||0)+delta;
-      const copy={...current};
-      if(next<=0)delete copy[id];else copy[id]=next;
-      return copy;
+  const changeQty = (id: number, delta: number) => {
+    setCart((current) => {
+      const next = (current[id] || 0) + delta;
+      const updated = { ...current };
+      if (next <= 0) delete updated[id];
+      else updated[id] = next;
+      return updated;
     });
   };
 
-  const scrollTo=(id:string)=>{document.getElementById(id)?.scrollIntoView({behavior:'smooth'});setMobileOpen(false)};
-  const orderText=()=>{
-    const lines=cartItems.map(p=>`${cart[p.id]} × ${p.name} — ${(cart[p.id]*p.price).toFixed(2)} €`);
-    return `Hola, You Sushi.\n\nQuiero preparar el siguiente pedido:\n\n${lines.join('\n')}\n\nSubtotal: ${total.toFixed(2)} €\nTotal: ${total.toFixed(2)} €\n\nNombre: ${order.name}\nTeléfono: ${order.phone}\nModalidad: ${order.mode}\nHora deseada: ${order.time||'Por confirmar'}\nObservaciones: ${order.notes||'Ninguna'}\nAlergias o indicaciones: ${order.allergies||'Ninguna'}\n\nEl pedido queda pendiente de confirmación por el restaurante.`;
+  const scrollTo = (id: string) => {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.getElementById(id)?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
+    setMobileOpen(false);
   };
-  const copyText=async(text:string,successMessage:string)=>{
-    try{
+
+  const orderText = () => {
+    const lines = cartItems.map(
+      (product) =>
+        `${cart[product.id]} × ${product.name} — ${formatPrice(cart[product.id] * product.price)}`,
+    );
+    return [
+      'Hola, You Sushi Sevilla.',
+      '',
+      'Quiero preparar el siguiente pedido:',
+      '',
+      ...lines,
+      '',
+      `Total orientativo de demostración: ${formatPrice(total)}`,
+      'Precios, disponibilidad e importe pendientes de confirmación por el restaurante.',
+      '',
+      `Nombre: ${order.name}`,
+      `Teléfono: ${order.phone}`,
+      `Modalidad: ${order.mode}`,
+      `Hora deseada: ${order.time || 'Por confirmar'}`,
+      `Observaciones: ${order.notes || 'Ninguna'}`,
+      `Alergias o indicaciones: ${order.allergies || 'Ninguna'}`,
+    ].join('\n');
+  };
+
+  const whatsappUrl = (message: string) =>
+    `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`;
+
+  const copyText = async (text: string, successMessage: string) => {
+    try {
       await navigator.clipboard.writeText(text);
       setCopyFeedback(successMessage);
-    }catch{
+    } catch {
       setCopyFeedback('No se pudo copiar. Comprueba los permisos del navegador e inténtalo de nuevo.');
     }
   };
-  const copyOrder=()=>copyText(orderText(),'Pedido copiado.');
-  const reservationText=`Hola, You Sushi.\n\nSolicito una reserva:\nNombre: ${reservation.name}\nTeléfono: ${reservation.phone}\nFecha: ${reservation.date}\nHora: ${reservation.time}\nPersonas: ${reservation.people}\nComentarios: ${reservation.comment||'Ninguno'}\n\nLa reserva queda pendiente de confirmación por el establecimiento.`;
 
-  const validateReservation=(event:FormEvent)=>{
+  const reservationText = [
+    'Hola, You Sushi Sevilla.',
+    '',
+    'Solicito una reserva:',
+    `Nombre: ${reservation.name}`,
+    `Teléfono: ${reservation.phone}`,
+    `Fecha: ${reservation.date}`,
+    `Hora: ${reservation.time}`,
+    `Personas: ${reservation.people}`,
+    `Comentarios: ${reservation.comment || 'Ninguno'}`,
+    '',
+    'La solicitud queda pendiente de confirmación por el establecimiento.',
+  ].join('\n');
+
+  const validateReservation = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const errors:Record<string,string>={};
-    if(reservation.name.trim().length<2)errors.name='Introduce tu nombre.';
-    if(!/^[+()\d\s-]{9,}$/.test(reservation.phone))errors.phone='Introduce un teléfono válido.';
-    const today=new Date();today.setHours(0,0,0,0);
-    if(!reservation.date)errors.date='Selecciona una fecha.';
-    else if(new Date(`${reservation.date}T00:00`)<today)errors.date='La fecha no puede ser anterior a hoy.';
-    if(!reservation.time)errors.time='Selecciona una hora.';
+    const errors: Record<string, string> = {};
+    if (reservation.name.trim().length < 2) errors.name = 'Introduce tu nombre.';
+    if (!/^[+()\d\s-]{9,}$/.test(reservation.phone)) errors.phone = 'Introduce un teléfono válido.';
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (!reservation.date) errors.date = 'Selecciona una fecha.';
+    else if (new Date(`${reservation.date}T00:00`) < today) {
+      errors.date = 'La fecha no puede ser anterior a hoy.';
+    }
+    if (!reservation.time) errors.time = 'Selecciona una hora.';
+
     setReservationErrors(errors);
-    if(Object.keys(errors).length===0)setReservationReady(true);
+    if (Object.keys(errors).length === 0) setReservationReady(true);
   };
 
-  const gallery=[
-    heroImage,
-    'https://images.unsplash.com/photo-1534482421-64566f976cfa?auto=format&fit=crop&w=1200&q=86',
-    'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1200&q=86',
-    'https://images.unsplash.com/photo-1617196034183-421b4917c92d?auto=format&fit=crop&w=1200&q=86',
-    'https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=1200&q=86',
-    interiorImage,
-  ];
+  return (
+    <>
+      <header className="site-header">
+        <button
+          className="brand"
+          type="button"
+          onClick={() => scrollTo('inicio')}
+          aria-label="Ir al inicio"
+        >
+          <span className="brand-seal" aria-hidden="true">友</span>
+          <span className="brand-wordmark"><strong>YOU</strong><small>SUSHI · SEVILLA</small></span>
+        </button>
 
-  return<>
-    <header className="site-header">
-      <button className="brand" onClick={()=>scrollTo('inicio')} aria-label="Ir al inicio"><span className="brand-seal">友</span><span><strong>YOU</strong><small>SUSHI</small></span></button>
-      <nav className={mobileOpen?'nav open':'nav'} aria-label="Navegación principal">
-        <button onClick={()=>scrollTo('inicio')}>Inicio</button><button onClick={()=>scrollTo('historia')}>Nuestra historia</button>
-        <button onClick={()=>scrollTo('carta')}>Carta</button><button onClick={()=>scrollTo('menus')}>Menús</button>
-        <button onClick={()=>scrollTo('galeria')}>Galería</button><button onClick={()=>scrollTo('reservas')}>Reservas</button><button onClick={()=>scrollTo('contacto')}>Contacto</button>
-      </nav>
-      <button className="header-order" onClick={()=>{setOrderStep('cart');setCartOpen(true)}}><ShoppingBag size={17}/><span>Pedir ahora</span>{count>0&&<b>{count}</b>}</button>
-      <button className="menu-button" onClick={()=>setMobileOpen(!mobileOpen)} aria-label={mobileOpen?'Cerrar menú':'Abrir menú'}>{mobileOpen?<X/>:<Menu/>}</button>
-    </header>
+        <nav className={mobileOpen ? 'nav open' : 'nav'} aria-label="Navegación principal">
+          <button type="button" onClick={() => scrollTo('historia')}>El restaurante</button>
+          <button type="button" onClick={() => scrollTo('carta')}>Carta</button>
+          <button type="button" onClick={() => scrollTo('menus')}>Para compartir</button>
+          <button type="button" onClick={() => scrollTo('galeria')}>Galería</button>
+          <button type="button" onClick={() => scrollTo('reservas')}>Reservas</button>
+          <button type="button" onClick={() => scrollTo('contacto')}>Contacto</button>
+        </nav>
 
-    <main>
-      <section className="hero" id="inicio">
-        <SafeImage src={heroImage} alt="Selección de sushi japonés"/>
-        <div className="hero-overlay"/>
-        <div className="hero-content">
-          <p className="eyebrow">RESTAURANTE JAPONES · SEVILLA</p>
-          <h1>El auténtico sabor<br/><em>de Japón</em> en Sevilla</h1>
-          <p>Sushi, sashimi y especialidades japonesas preparadas con atención al detalle.</p>
-          <div className="hero-actions"><button className="btn red" onClick={()=>scrollTo('carta')}>Descubrir la carta <ArrowRight size={17}/></button><button className="btn glass" onClick={()=>{setOrderStep('cart');setCartOpen(true)}}><ShoppingBag size={17}/> Preparar pedido</button></div>
+        <div className="header-actions">
+          <button
+            className="header-order"
+            type="button"
+            onClick={() => {
+              setOrderStep('cart');
+              setCartOpen(true);
+            }}
+          >
+            <ShoppingBag size={17} aria-hidden="true" />
+            <span>Tu pedido</span>
+            {count > 0 && <b aria-label={`${count} productos`}>{count}</b>}
+          </button>
+          <button
+            className="menu-button"
+            type="button"
+            onClick={() => setMobileOpen((open) => !open)}
+            aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
+            aria-expanded={mobileOpen}
+          >
+            {mobileOpen ? <X /> : <Menu />}
+          </button>
         </div>
-        <div className="hero-address"><MapPin size={16}/><span>{restaurant.address}<br/>{restaurant.postal}</span></div>
-      </section>
+      </header>
 
-      <section className="story section" id="historia">
-        <div className="story-visual"><SafeImage src={interiorImage} alt="Ambiente japonés de You Sushi"/><div className="story-seal"><UtensilsCrossed/><span>Cocina cuidada</span></div></div>
-        <div className="story-copy"><p className="eyebrow dark">NUESTRA HISTORIA</p><h2>Japón, en el corazón<br/>del Casco Antiguo</h2><p>En You Sushi encontrarás una propuesta japonesa cercana en el centro histórico de Sevilla: sushi elaborado con cuidado, platos calientes, ramen y opciones para comer en el local o llevar.</p><div className="story-facts"><div><strong>01</strong><span>Cocina japonesa</span></div><div><strong>02</strong><span>Sushi y sashimi</span></div><div><strong>03</strong><span>Comer aquí o llevar</span></div></div></div>
-      </section>
+      <main>
+        <section className="hero" id="inicio">
+          <div
+            className="hero-photo photo-tilt"
+            onPointerMove={handlePhotoMove}
+            onPointerLeave={handlePhotoLeave}
+          >
+            <SafeImage
+              src={foodImages[0].src}
+              alt={foodImages[0].alt}
+              className="hero-image"
+              width={1600}
+              height={1600}
+              eager
+            />
+          </div>
+          <div className="hero-overlay" />
+          <div className="hero-content">
+            <p className="eyebrow">COCINA JAPONESA · SEVILLA</p>
+            <h1>Un encuentro<br />con Japón.</h1>
+            <p className="hero-intro">
+              Sushi, platos japoneses y una mesa para disfrutar en el corazón del casco antiguo.
+            </p>
+            <div className="hero-actions">
+              <button className="btn red" type="button" onClick={() => scrollTo('carta')}>
+                Explorar la carta <ArrowRight size={17} aria-hidden="true" />
+              </button>
+              <button
+                className="btn glass"
+                type="button"
+                onClick={() => {
+                  setOrderStep('cart');
+                  setCartOpen(true);
+                }}
+              >
+                <ShoppingBag size={17} aria-hidden="true" /> Preparar pedido
+              </button>
+            </div>
+          </div>
+          <div className="hero-location">
+            <MapPin size={16} aria-hidden="true" />
+            <span>{restaurant.address}<br />{restaurant.postal}</span>
+          </div>
+          <p className="photo-credit hero-credit">Fotografía ilustrativa · Unsplash</p>
+          <span className="hero-index" aria-hidden="true">01 / 05</span>
+        </section>
 
-      <section className="menu-section section" id="carta">
-        <div className="section-heading"><div><p className="eyebrow dark">CARTA DIGITAL</p><h2>Nuestra selección</h2></div><div className="search-box"><Search size={18}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar plato o ingrediente" aria-label="Buscar plato o ingrediente"/></div></div>
-        <p className="catalog-note">Carta de demostración. Confirma precios, disponibilidad, ingredientes y alérgenos con el restaurante antes de realizar el pedido.</p>
-        <div className="preference-row" aria-label="Filtros por preferencias">{filterOptions.map(option=><button key={option} className={preference===option?'active':''} onClick={()=>setPreference(preference===option?'':option)}>{option}</button>)}</div>
-        <div className="category-row" aria-label="Categorías">{categories.map(c=><button key={c} className={category===c?'active':''} onClick={()=>setCategory(c)}>{c}</button>)}</div>
-        <p className="result-count">{filtered.length} platos encontrados</p>
-        <div className="product-grid">
-          {filtered.map(p=><article className="product-card" key={p.id}>
-            <button className="product-photo" onClick={()=>{setSelected(p);setModalQty(1)}} aria-label={`Ver detalles de ${p.name}`}><SafeImage src={p.image} alt={p.name}/>{p.verified&&p.tags.slice(0,1).map(t=><span className="product-tag" key={t}>{t}</span>)}</button>
-            <div className="product-content"><p className="product-category">{p.category}</p><button className="product-name" onClick={()=>{setSelected(p);setModalQty(1)}}>{p.name}</button><p className="product-description">{p.description}</p>{p.pieces&&<span className="pieces">{p.pieces}</span>}<div className="product-footer"><strong>{p.price.toFixed(2).replace('.',',')} €</strong><button onClick={()=>changeQty(p.id,1)} aria-label={`Añadir ${p.name}`}><Plus size={18}/></button></div></div>
-          </article>)}
+        <section className="story section" id="historia">
+          <div className="story-copy">
+            <p className="eyebrow dark">YOU SUSHI · SEVILLA</p>
+            <h2>Una pausa japonesa<br />en Santa María la Blanca.</h2>
+            <p>
+              En pleno centro histórico de Sevilla, You Sushi reúne sushi, ramen y especialidades
+              japonesas en una propuesta para disfrutar en el restaurante o pedir para llevar.
+            </p>
+            <a className="text-link" href={restaurant.website} target="_blank" rel="noreferrer">
+              Conoce el restaurante <ExternalLink size={15} aria-hidden="true" />
+            </a>
+            <div className="story-facts">
+              <div><strong>01</strong><span>Sushi y sashimi</span></div>
+              <div><strong>02</strong><span>Platos japoneses</span></div>
+              <div><strong>03</strong><span>Para compartir</span></div>
+            </div>
+          </div>
+          <aside className="story-note">
+            <span className="story-kanji" aria-hidden="true">友</span>
+            <div className="story-note-bottom">
+              <p className="eyebrow">EN EL CORAZÓN DE SEVILLA</p>
+              <address>{restaurant.address}<br />{restaurant.postal}</address>
+              <button className="text-link light-link" type="button" onClick={() => scrollTo('contacto')}>
+                Cómo llegar <ArrowRight size={15} aria-hidden="true" />
+              </button>
+            </div>
+          </aside>
+        </section>
+
+        <section className="menu-section section" id="carta">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow dark">CARTA DIGITAL</p>
+              <h2>Para elegir<br />a tu manera.</h2>
+            </div>
+            <label className="search-box">
+              <Search size={18} aria-hidden="true" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Buscar plato o ingrediente"
+                aria-label="Buscar plato o ingrediente"
+              />
+            </label>
+          </div>
+
+          <div className="catalog-notice" role="note">
+            <span className="notice-mark" aria-hidden="true">!</span>
+            <p>
+              <strong>Información pendiente de validación.</strong> Esta carta es de demostración:
+              nombres, descripciones y precios no son oficiales. Ingredientes y alérgenos están
+              pendientes de confirmación directa con el restaurante.
+            </p>
+          </div>
+
+          <div className="preference-heading">
+            <p>Explorar por preferencia</p>
+            <span>Filtros orientativos; no sirven para determinar alérgenos o restricciones alimentarias.</span>
+          </div>
+          <div className="preference-row" aria-label="Filtros orientativos">
+            {filterOptions.map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={preference === option ? 'active' : ''}
+                aria-pressed={preference === option}
+                onClick={() => setPreference(preference === option ? '' : option)}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+          <div className="category-row" aria-label="Categorías de la carta">
+            {categories.map((item) => (
+              <button
+                key={item}
+                type="button"
+                className={category === item ? 'active' : ''}
+                aria-pressed={category === item}
+                onClick={() => setCategory(item)}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+          <p className="result-count" aria-live="polite">
+            {filtered.length} {filtered.length === 1 ? 'plato' : 'platos'}
+          </p>
+
+          {filtered.length > 0 ? (
+            <div className="product-list">
+              {filtered.map((product, index) => (
+                <article className="product-row" key={product.id}>
+                  <span className="product-ordinal" aria-hidden="true">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <div className="product-main">
+                    <p className="product-category">{product.category}</p>
+                    <button
+                      className="product-name"
+                      type="button"
+                      onClick={() => {
+                        setSelected(product);
+                        setModalQty(1);
+                      }}
+                    >
+                      {product.name}
+                    </button>
+                    <p className="product-description">{product.description}</p>
+                    {product.pieces && <span className="pieces">{product.pieces}</span>}
+                  </div>
+                  <div className="product-actions">
+                    <span className="price-caption">Precio demo</span>
+                    <strong>{formatPrice(product.price)}</strong>
+                    <button
+                      className="add-button"
+                      type="button"
+                      aria-label={`Añadir ${product.name} al pedido`}
+                      onClick={() => changeQty(product.id, 1)}
+                    >
+                      <Plus size={18} aria-hidden="true" />
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="no-results">
+              <p>No hay resultados para esta búsqueda.</p>
+              <button
+                className="text-link"
+                type="button"
+                onClick={() => {
+                  setSearch('');
+                  setCategory('Todos');
+                  setPreference('');
+                }}
+              >
+                Limpiar filtros <ArrowRight size={15} aria-hidden="true" />
+              </button>
+            </div>
+          )}
+        </section>
+
+        <section className="menus-section section" id="menus">
+          <div className="section-heading light">
+            <div>
+              <p className="eyebrow">SELECCIÓN PARA COMPARTIR</p>
+              <h2>La mesa sabe mejor<br />cuando se comparte.</h2>
+            </div>
+            <p>Una pequeña selección de menús de la carta. Las fotografías son ilustrativas y no representan menús oficiales.</p>
+          </div>
+          <div className="menu-grid">
+            {featuredMenus.map(({ id, image, label }) => {
+              const product = menus.find((item) => item.id === id);
+              if (!product) return null;
+
+              return (
+                <article className="menu-card" key={product.id}>
+                  <div
+                    className="menu-photo photo-tilt"
+                    onPointerMove={handlePhotoMove}
+                    onPointerLeave={handlePhotoLeave}
+                  >
+                    <SafeImage
+                      src={image.src}
+                      alt={`${image.alt}; fotografía ilustrativa, no es una imagen verificada del menú ${product.name}`}
+                      width={1600}
+                      height={1600}
+                    />
+                    <span className="photo-label">Imagen ilustrativa</span>
+                  </div>
+                  <div className="menu-card-content">
+                    <p className="menu-category">{product.category}</p>
+                    <h3>{product.name}</h3>
+                    <p className="menu-description">{product.description}</p>
+                    <p className="menu-editorial">{label}</p>
+                    {product.pieces && <span className="pieces">{product.pieces}</span>}
+                    <div className="menu-footer">
+                      <span><small>Precio demo</small><strong>{formatPrice(product.price)}</strong></span>
+                      <button
+                        type="button"
+                        onClick={() => changeQty(product.id, 1)}
+                        aria-label={`Añadir ${product.name} al pedido`}
+                      >
+                        <Plus size={16} aria-hidden="true" /> Añadir
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          <p className="image-disclaimer">
+            Imágenes de Unsplash bajo su licencia de uso; son ilustrativas y no se han verificado como fotografías de You Sushi ni de estos menús.
+          </p>
+        </section>
+
+        <section className="reservation section" id="reservas">
+          <div className="reservation-copy">
+            <p className="eyebrow dark">TU PRÓXIMA MESA</p>
+            <h2>Nos vemos<br />en Sevilla.</h2>
+            <p>
+              Prepara una solicitud de reserva y envíala al restaurante por WhatsApp. La reserva
+              quedará pendiente de confirmación.
+            </p>
+            <a href={`tel:${restaurant.phoneInternational}`}>
+              <Phone size={17} aria-hidden="true" /> ¿Prefieres llamar? {restaurant.phone}
+            </a>
+          </div>
+
+          <form className="reservation-form" onSubmit={validateReservation} noValidate>
+            <div className="form-grid">
+              <label>
+                Nombre*
+                <input
+                  autoComplete="name"
+                  value={reservation.name}
+                  onChange={(event) => setReservation({ ...reservation, name: event.target.value })}
+                  aria-invalid={Boolean(reservationErrors.name)}
+                />
+                {reservationErrors.name && <small>{reservationErrors.name}</small>}
+              </label>
+              <label>
+                Teléfono*
+                <input
+                  type="tel"
+                  autoComplete="tel"
+                  value={reservation.phone}
+                  onChange={(event) => setReservation({ ...reservation, phone: event.target.value })}
+                  aria-invalid={Boolean(reservationErrors.phone)}
+                />
+                {reservationErrors.phone && <small>{reservationErrors.phone}</small>}
+              </label>
+            </div>
+            <div className="form-grid">
+              <label>
+                Fecha*
+                <input
+                  type="date"
+                  min={localToday()}
+                  value={reservation.date}
+                  onChange={(event) => setReservation({ ...reservation, date: event.target.value })}
+                  aria-invalid={Boolean(reservationErrors.date)}
+                />
+                {reservationErrors.date && <small>{reservationErrors.date}</small>}
+              </label>
+              <label>
+                Hora*
+                <input
+                  type="time"
+                  value={reservation.time}
+                  onChange={(event) => setReservation({ ...reservation, time: event.target.value })}
+                  aria-invalid={Boolean(reservationErrors.time)}
+                />
+                {reservationErrors.time && <small>{reservationErrors.time}</small>}
+              </label>
+            </div>
+            <label>
+              Personas
+              <select
+                value={reservation.people}
+                onChange={(event) => setReservation({ ...reservation, people: event.target.value })}
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((number) => (
+                  <option key={number} value={number}>
+                    {number} {number === 1 ? 'persona' : 'personas'}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Comentarios
+              <textarea
+                value={reservation.comment}
+                onChange={(event) => setReservation({ ...reservation, comment: event.target.value })}
+                placeholder="Indicaciones para el restaurante"
+              />
+            </label>
+            {reservationReady ? (
+              <div className="reservation-ready">
+                <div>
+                  <strong>Solicitud preparada</strong>
+                  <p>El restaurante debe confirmar la reserva.</p>
+                </div>
+                <div className="reservation-ready-actions">
+                  <a
+                    className="btn whatsapp"
+                    href={whatsappUrl(reservationText)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <MessageCircle size={16} aria-hidden="true" /> Enviar por WhatsApp
+                  </a>
+                  <button
+                    className="btn outline"
+                    type="button"
+                    onClick={() => copyText(reservationText, 'Solicitud de reserva copiada.')}
+                  >
+                    Copiar solicitud
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button className="btn red" type="submit">
+                <CalendarDays size={18} aria-hidden="true" /> Preparar reserva
+              </button>
+            )}
+            {copyFeedback && <p className="copy-feedback" role="status">{copyFeedback}</p>}
+            <p className="privacy-note">
+              No se envían datos desde esta página. Revisa y envía la solicitud desde WhatsApp o
+              cópiala para compartirla. <button type="button" onClick={() => scrollTo('privacidad')}>Más información</button>
+            </p>
+          </form>
+        </section>
+
+        <section className="reviews section">
+          <div>
+            <p className="eyebrow dark">OPINIONES</p>
+            <h2>La experiencia,<br />contada por sus clientes.</h2>
+          </div>
+          <div className="review-summary">
+            <span className="review-mark" aria-hidden="true">“</span>
+            <p>Consulta opiniones y valoraciones actuales directamente en Google.</p>
+            <a className="btn outline" href={restaurant.reviews} target="_blank" rel="noreferrer">
+              Ver reseñas reales <ExternalLink size={15} aria-hidden="true" />
+            </a>
+          </div>
+        </section>
+
+        <section className="gallery section" id="galeria">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow dark">GALERÍA EDITORIAL</p>
+              <h2>Un festín para los sentidos.</h2>
+            </div>
+            <p>Cinco imágenes gastronómicas seleccionadas para inspirar. Ninguna se atribuye al restaurante.</p>
+          </div>
+          <div className="gallery-grid">
+            {foodImages.map((image, index) => (
+              <button
+                className={`gallery-item g${index + 1}`}
+                key={image.src}
+                type="button"
+                onClick={() => setGalleryIndex(index)}
+                aria-label={`Ampliar fotografía ilustrativa: ${image.title}`}
+              >
+                <SafeImage src={image.src} alt={`${image.alt}; fotografía ilustrativa de Unsplash`} />
+                <span className="gallery-caption">{image.title}</span>
+                <span className="gallery-expand" aria-hidden="true"><Plus size={19} /></span>
+              </button>
+            ))}
+          </div>
+          <p className="image-disclaimer">
+            Fotografías ilustrativas de Unsplash, almacenadas localmente. Consulta la{' '}
+            <a href={foodImages[0].licenseUrl} target="_blank" rel="noreferrer">licencia de uso</a>.
+          </p>
+        </section>
+
+        <section className="social section">
+          <div>
+            <p className="eyebrow dark">SIGUE EN CONTACTO</p>
+            <h2>Nos vemos<br />en la mesa.</h2>
+          </div>
+          <div className="social-links">
+            <a href={restaurant.facebook} target="_blank" rel="noreferrer">
+              <span className="social-letter" aria-hidden="true">f</span> Facebook
+              <ExternalLink size={14} aria-hidden="true" />
+            </a>
+            <a href={`mailto:${restaurant.email}`}>
+              <Mail size={18} aria-hidden="true" /> Contactar por correo
+            </a>
+          </div>
+        </section>
+
+        <section className="contact" id="contacto">
+          <div className="contact-map">
+            <iframe
+              title="Mapa de You Sushi en Sevilla"
+              src={`https://www.google.com/maps?q=${encodeURIComponent(`${restaurant.address}, ${restaurant.postal}`)}&output=embed`}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+          <div className="contact-copy">
+            <p className="eyebrow dark">ENCUÉNTRANOS</p>
+            <h2>Una dirección<br />para recordar.</h2>
+            <address><MapPin size={18} aria-hidden="true" /><span>{restaurant.address}<br />{restaurant.postal}</span></address>
+            <a href={`tel:${restaurant.phoneInternational}`}><Phone size={17} aria-hidden="true" />{restaurant.phone}</a>
+            <a href={`mailto:${restaurant.email}`}><Mail size={17} aria-hidden="true" />{restaurant.email}</a>
+            <div className="hours">
+              <Clock3 size={18} aria-hidden="true" />
+              <div><strong>Horario</strong><span>{restaurant.hoursStatus}</span></div>
+            </div>
+            <div className="contact-actions">
+              <a className="btn red" href={restaurant.maps} target="_blank" rel="noreferrer">
+                Cómo llegar <ArrowRight size={16} aria-hidden="true" />
+              </a>
+              <a className="btn outline" href={`tel:${restaurant.phoneInternational}`}>
+                Llamar al restaurante <Phone size={16} aria-hidden="true" />
+              </a>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer id="privacidad">
+        <div className="footer-brand">
+          <span className="brand-seal" aria-hidden="true">友</span>
+          <div><strong>YOU SUSHI</strong><p>Cocina japonesa en Sevilla.</p></div>
         </div>
-      </section>
+        <nav className="footer-links" aria-label="Enlaces del pie de página">
+          <strong>Explorar</strong>
+          <button type="button" onClick={() => scrollTo('historia')}>El restaurante</button>
+          <button type="button" onClick={() => scrollTo('carta')}>Carta</button>
+          <button type="button" onClick={() => scrollTo('menus')}>Para compartir</button>
+          <button type="button" onClick={() => scrollTo('reservas')}>Reservas</button>
+        </nav>
+        <div className="footer-contact">
+          <strong>Contacto</strong>
+          <p>{restaurant.address}<br />{restaurant.postal}</p>
+          <a href={`tel:${restaurant.phoneInternational}`}>{restaurant.phone}</a>
+          <a href={`mailto:${restaurant.email}`}>{restaurant.email}</a>
+        </div>
+        <div className="footer-disclaimer">
+          <strong>Transparencia</strong>
+          <p>
+            Carta y precios de demostración pendientes de validación. Las imágenes son ilustrativas
+            y no están verificadas como fotografías del restaurante. Los formularios no envían
+            información hasta que la compartas desde tu dispositivo.
+          </p>
+        </div>
+        <div className="footer-bottom">
+          <span>© {new Date().getFullYear()} You Sushi Sevilla</span>
+          <a href={restaurant.website} target="_blank" rel="noreferrer">Web oficial <ExternalLink size={13} aria-hidden="true" /></a>
+        </div>
+      </footer>
 
-      <section className="menus-section section" id="menus">
-        <div className="section-heading light"><div><p className="eyebrow">PARA COMPARTIR</p><h2>Menús & combinados</h2></div><p>Selecciones de la carta para comer solo o reunirse alrededor de una buena mesa.</p></div>
-        <div className="menu-grid">{menus.map(p=><article className="menu-card" key={p.id}><SafeImage src={p.image} alt={p.name}/><div className="menu-card-content"><p>{p.category}</p><h3>{p.name}</h3><p className="menu-description">{p.description}</p><span>{p.pieces}</span><div className="menu-footer"><strong>{p.price.toFixed(2).replace('.',',')} €</strong><button onClick={()=>changeQty(p.id,1)}><Plus size={16}/> Añadir</button></div></div></article>)}</div>
-      </section>
+      <button
+        className="floating-cart"
+        type="button"
+        onClick={() => {
+          setOrderStep('cart');
+          setCartOpen(true);
+        }}
+        aria-label={`Abrir pedido${count > 0 ? `, ${count} productos` : ''}`}
+      >
+        <ShoppingBag aria-hidden="true" />
+        {count > 0 && <span>{count}</span>}
+      </button>
 
-      <section className="reservation section" id="reservas">
-        <div className="reservation-copy"><p className="eyebrow dark">TU PRÓXIMA MESA</p><h2>Ven a vivir<br/>You Sushi</h2><p>Prepara tu solicitud y el restaurante podrá confirmar la disponibilidad.</p><a href={`tel:${restaurant.phoneInternational}`}><Phone size={17}/> ¿Prefieres llamar? {restaurant.phone}</a></div>
-        <form className="reservation-form" onSubmit={validateReservation} noValidate>
-          <div className="form-grid"><label>Nombre*<input value={reservation.name} onChange={e=>setReservation({...reservation,name:e.target.value})}/>{reservationErrors.name&&<small>{reservationErrors.name}</small>}</label><label>Teléfono*<input type="tel" value={reservation.phone} onChange={e=>setReservation({...reservation,phone:e.target.value})}/>{reservationErrors.phone&&<small>{reservationErrors.phone}</small>}</label></div>
-          <div className="form-grid"><label>Fecha*<input type="date" min={new Date().toISOString().split('T')[0]} value={reservation.date} onChange={e=>setReservation({...reservation,date:e.target.value})}/>{reservationErrors.date&&<small>{reservationErrors.date}</small>}</label><label>Hora*<input type="time" value={reservation.time} onChange={e=>setReservation({...reservation,time:e.target.value})}/>{reservationErrors.time&&<small>{reservationErrors.time}</small>}</label></div>
-          <label>Personas<select value={reservation.people} onChange={e=>setReservation({...reservation,people:e.target.value})}>{[1,2,3,4,5,6,7,8,9,10].map(n=><option key={n} value={n}>{n} {n===1?'persona':'personas'}</option>)}</select></label>
-          <label>Comentarios<textarea value={reservation.comment} onChange={e=>setReservation({...reservation,comment:e.target.value})} placeholder="Alergias u indicaciones"/></label>
-          {reservationReady?<div className="reservation-ready"><div><strong>Solicitud preparada</strong><p>El establecimiento debe confirmar la reserva.</p></div><div className="reservation-ready-actions"><button className="btn outline" type="button" onClick={()=>copyText(reservationText,'Solicitud de reserva copiada.')}>Copiar solicitud</button><a className="btn red" href={`tel:${restaurant.phoneInternational}`}><Phone size={16}/> Llamar</a></div></div>:<button className="btn red" type="submit"><CalendarDays size={18}/> Preparar reserva</button>}
-          {copyFeedback&&<p className="copy-feedback" role="status">{copyFeedback}</p>}
-          <p className="privacy-note">Al enviar la solicitud aceptas el tratamiento local de estos datos para preparar el mensaje. Consulta la <button type="button" onClick={()=>scrollTo('privacidad')}>política de privacidad</button>.</p>
-        </form>
-      </section>
+      {selected && (
+        <div
+          className="overlay"
+          role="presentation"
+          onMouseDown={(event) => event.target === event.currentTarget && setSelected(null)}
+        >
+          <div className="product-modal" role="dialog" aria-modal="true" aria-labelledby="product-title">
+            <button className="modal-close" type="button" onClick={() => setSelected(null)} aria-label="Cerrar detalles">
+              <X />
+            </button>
+            <div className="modal-copy">
+              <p className="eyebrow dark">{selected.category}</p>
+              <h2 id="product-title">{selected.name}</h2>
+              <p>{selected.description}</p>
+              {selected.pieces && <span className="pieces">{selected.pieces}</span>}
+              <div className="detail-block">
+                <strong>Ingredientes</strong>
+                <span>{selected.ingredients}</span>
+              </div>
+              <div className="detail-block">
+                <strong>Alérgenos</strong>
+                <span>{selected.allergens}</span>
+              </div>
+              <p className="pending-note">
+                Datos y precio de demostración pendientes de validación. Consulta directamente al
+                restaurante, especialmente ante alergias o intolerancias.
+              </p>
+              <div className="modal-footer">
+                <div className="modal-qty" aria-label="Cantidad">
+                  <button type="button" onClick={() => setModalQty((quantity) => Math.max(1, quantity - 1))} aria-label="Restar una unidad">
+                    <Minus size={16} />
+                  </button>
+                  <span>{modalQty}</span>
+                  <button type="button" onClick={() => setModalQty((quantity) => quantity + 1)} aria-label="Añadir una unidad">
+                    <Plus size={16} />
+                  </button>
+                </div>
+                <button
+                  className="btn red"
+                  type="button"
+                  onClick={() => {
+                    setCart((current) => ({
+                      ...current,
+                      [selected.id]: (current[selected.id] || 0) + modalQty,
+                    }));
+                    setSelected(null);
+                  }}
+                >
+                  Añadir · {formatPrice(selected.price * modalQty)}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <section className="reviews section"><div><p className="eyebrow dark">LO QUE DICEN NUESTROS CLIENTES</p><h2>Opiniones reales</h2></div><div className="review-summary"><p>Consulta las opiniones y la valoración actuales de You Sushi directamente en Google.</p><a className="btn outline" href={restaurant.reviews} target="_blank" rel="noreferrer">Ver reseñas reales</a></div></section>
+      {galleryIndex !== null && (
+        <div
+          className="lightbox"
+          role="presentation"
+          onMouseDown={(event) => event.target === event.currentTarget && setGalleryIndex(null)}
+        >
+          <div className="lightbox-content" role="dialog" aria-modal="true" aria-label="Galería de fotografías ilustrativas">
+            <button className="light-close" type="button" onClick={() => setGalleryIndex(null)} aria-label="Cerrar galería">
+              <X />
+            </button>
+            <button
+              className="light-nav left"
+              type="button"
+              onClick={() => setGalleryIndex((galleryIndex - 1 + foodImages.length) % foodImages.length)}
+              aria-label="Fotografía anterior"
+            >
+              <ChevronLeft />
+            </button>
+            <SafeImage
+              src={foodImages[galleryIndex].src}
+              alt={`${foodImages[galleryIndex].alt}; fotografía ilustrativa de Unsplash`}
+              width={1600}
+              height={1600}
+            />
+            <p>{foodImages[galleryIndex].title} · Imagen ilustrativa</p>
+            <button
+              className="light-nav right"
+              type="button"
+              onClick={() => setGalleryIndex((galleryIndex + 1) % foodImages.length)}
+              aria-label="Fotografía siguiente"
+            >
+              <ChevronRight />
+            </button>
+          </div>
+        </div>
+      )}
 
-      <section className="gallery section" id="galeria"><div className="section-heading"><div><p className="eyebrow dark">GALERÍA</p><h2>Momentos You Sushi</h2></div><p>Sushi, ramen, tempura y ambiente gastronómico.</p></div><div className="gallery-grid">{gallery.map((src,i)=><button className={`gallery-item g${i+1}`} key={src} onClick={()=>setGalleryIndex(i)}><SafeImage src={src} alt={`Ambiente gastronómico You Sushi ${i+1}`}/><span><Plus size={20}/></span></button>)}</div></section>
+      {cartOpen && (
+        <div
+          className="cart-overlay"
+          role="presentation"
+          onMouseDown={(event) => event.target === event.currentTarget && setCartOpen(false)}
+        >
+          <aside className="cart-drawer" role="dialog" aria-modal="true" aria-label="Pedido You Sushi">
+            <div className="cart-header">
+              <div>
+                <p>{orderStep === 'cart' ? 'Tu pedido' : orderStep === 'details' ? 'Datos del pedido' : 'Resumen'}</p>
+                <span>{count} {count === 1 ? 'producto' : 'productos'}</span>
+              </div>
+              <button type="button" onClick={() => setCartOpen(false)} aria-label="Cerrar pedido"><X /></button>
+            </div>
 
-      <section className="social section"><div><p className="eyebrow dark">SÍGUENOS</p><h2>Síguenos y descubre You Sushi</h2></div><div className="social-links"><a href={restaurant.facebook} target="_blank" rel="noreferrer"><b>f</b> Facebook</a><a href={`mailto:${restaurant.email}`}><Mail size={19}/> Contactar por correo</a></div></section>
+            {orderStep === 'cart' &&
+              (!cartItems.length ? (
+                <div className="empty-cart">
+                  <ShoppingBag aria-hidden="true" />
+                  <h3>Tu pedido está vacío</h3>
+                  <p>Añade tus platos favoritos desde la carta.</p>
+                  <button
+                    className="btn red"
+                    type="button"
+                    onClick={() => {
+                      setCartOpen(false);
+                      scrollTo('carta');
+                    }}
+                  >
+                    Explorar la carta
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="cart-items">
+                    {cartItems.map((product) => (
+                      <div className="cart-item" key={product.id}>
+                        <div className="cart-item-number" aria-hidden="true">{String(product.id).padStart(2, '0')}</div>
+                        <div className="cart-item-copy">
+                          <strong>{product.name}</strong>
+                          <span>{formatPrice(product.price)} · precio demo</span>
+                          <div className="qty">
+                            <button type="button" onClick={() => changeQty(product.id, -1)} aria-label={`Restar ${product.name}`}>
+                              <Minus size={14} />
+                            </button>
+                            <b>{cart[product.id]}</b>
+                            <button type="button" onClick={() => changeQty(product.id, 1)} aria-label={`Añadir ${product.name}`}>
+                              <Plus size={14} />
+                            </button>
+                          </div>
+                        </div>
+                        <button
+                          className="remove"
+                          type="button"
+                          onClick={() => changeQty(product.id, -cart[product.id])}
+                          aria-label={`Eliminar ${product.name}`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="cart-summary">
+                    <p>Importes de demostración, pendientes de confirmación.</p>
+                    <div><span>Subtotal orientativo</span><strong>{formatPrice(total)}</strong></div>
+                    <div><span>Total orientativo</span><strong>{formatPrice(total)}</strong></div>
+                  </div>
+                  <div className="cart-actions">
+                    <button className="btn red" type="button" onClick={() => setOrderStep('details')}>
+                      Continuar pedido <ArrowRight size={17} aria-hidden="true" />
+                    </button>
+                    <button className="clear" type="button" onClick={() => setCart({})}>Vaciar pedido</button>
+                  </div>
+                </>
+              ))}
 
-      <section className="contact" id="contacto"><div className="contact-map"><iframe title="Mapa You Sushi Sevilla" src={`https://www.google.com/maps?q=${encodeURIComponent(`${restaurant.address}, ${restaurant.postal}`)}&output=embed`} loading="lazy"/></div><div className="contact-copy"><p className="eyebrow dark">TU JAPÓN EN SEVILLA</p><h2>Estamos aquí</h2><address><MapPin/><span>{restaurant.address}<br/>41004 Sevilla, España</span></address><a href={`tel:${restaurant.phoneInternational}`}><Phone/><span>{restaurant.phone}</span></a><a href={`mailto:${restaurant.email}`}><Mail/><span>{restaurant.email}</span></a><div className="hours"><Clock3/><div><strong>Horario</strong><span>{restaurant.hoursStatus}</span></div></div><div className="contact-actions"><a className="btn red" href={restaurant.maps} target="_blank" rel="noreferrer">Cómo llegar</a><button className="btn outline" onClick={()=>scrollTo('reservas')}>Reservar mesa</button></div></div></section>
-    </main>
+            {orderStep === 'details' && (
+              <div className="order-form">
+                <label>Nombre*<input autoComplete="name" value={order.name} onChange={(event) => setOrder({ ...order, name: event.target.value })} /></label>
+                <label>Teléfono*<input type="tel" autoComplete="tel" value={order.phone} onChange={(event) => setOrder({ ...order, phone: event.target.value })} /></label>
+                <label>
+                  Modalidad
+                  <select value={order.mode} onChange={(event) => setOrder({ ...order, mode: event.target.value })}>
+                    <option>Recoger en el restaurante</option>
+                    <option>Consultar entrega a domicilio</option>
+                  </select>
+                </label>
+                <label>Hora deseada<input type="time" value={order.time} onChange={(event) => setOrder({ ...order, time: event.target.value })} /></label>
+                <label>Observaciones<textarea value={order.notes} onChange={(event) => setOrder({ ...order, notes: event.target.value })} /></label>
+                <label>Alergias o indicaciones<textarea value={order.allergies} onChange={(event) => setOrder({ ...order, allergies: event.target.value })} /></label>
+                <p className="pending-note">
+                  El pedido y sus precios son orientativos y quedan pendientes de confirmación por el restaurante.
+                </p>
+                <div className="order-form-actions">
+                  <button className="btn outline" type="button" onClick={() => setOrderStep('cart')}>Volver</button>
+                  <button
+                    className="btn red"
+                    type="button"
+                    disabled={!order.name.trim() || !/^[+()\d\s-]{9,}$/.test(order.phone)}
+                    onClick={() => setOrderStep('summary')}
+                  >
+                    Ver resumen
+                  </button>
+                </div>
+              </div>
+            )}
 
-    <footer id="privacidad"><div className="footer-brand"><span className="brand-seal">友</span><div><strong>YOU SUSHI</strong><p>Cocina japonesa en el corazón de Sevilla.</p></div></div><nav className="footer-links"><strong>Explorar</strong><button onClick={()=>scrollTo('historia')}>Nuestra historia</button><button onClick={()=>scrollTo('carta')}>Carta</button><button onClick={()=>scrollTo('menus')}>Menús</button><button onClick={()=>scrollTo('reservas')}>Reservas</button></nav><div className="footer-contact"><strong>Contacto</strong><p>{restaurant.address}<br/>41004 Sevilla</p><a href={`tel:${restaurant.phoneInternational}`}>{restaurant.phone}</a><a href={`mailto:${restaurant.email}`}>{restaurant.email}</a></div><div className="footer-bottom"><span>© 2026 You Sushi Sevilla</span><span>Demo comercial · Política de privacidad · Aviso legal</span></div></footer>
-
-    <button className="floating-cart" onClick={()=>{setOrderStep('cart');setCartOpen(true)}} aria-label={`Abrir pedido, ${count} productos`}><ShoppingBag/><span>{count}</span></button>
-
-    {selected&&<div className="overlay" role="dialog" aria-modal="true" onMouseDown={e=>e.target===e.currentTarget&&setSelected(null)}><div className="product-modal"><button className="modal-close" onClick={()=>setSelected(null)} aria-label="Cerrar"><X/></button><SafeImage src={selected.image} alt={selected.name} className="modal-photo"/><div className="modal-copy"><p className="eyebrow dark">{selected.category}</p><h2>{selected.name}</h2><p>{selected.description}</p><div className="detail-block"><strong>Ingredientes</strong><span>{selected.ingredients}</span></div>{selected.pieces&&<span className="pieces">{selected.pieces}</span>}<div className="detail-block"><strong>Alérgenos</strong><span>{selected.allergens}</span></div>{selected.verified&&<div className="modal-tags">{selected.tags.map(t=><span key={t}>{t}</span>)}</div>}<div className="modal-footer"><div className="modal-qty"><button onClick={()=>setModalQty(q=>Math.max(1,q-1))}><Minus/></button><span>{modalQty}</span><button onClick={()=>setModalQty(q=>q+1)}><Plus/></button></div><button className="btn red" onClick={()=>{setCart(c=>({...c,[selected.id]: (c[selected.id]||0)+modalQty})) ;setSelected(null)}}>Añadir · {((selected.price*modalQty)).toFixed(2).replace('.',',')} €</button></div></div></div></div>}
-
-    {galleryIndex!==null&&<div className="lightbox" role="dialog" aria-modal="true" onMouseDown={e=>e.target===e.currentTarget&&setGalleryIndex(null)}><button className="light-close" onClick={()=>setGalleryIndex(null)}><X/></button><button className="light-nav left" onClick={()=>setGalleryIndex((galleryIndex-1+gallery.length)%gallery.length)}><ChevronLeft/></button><img src={gallery[galleryIndex]} alt="Imagen ampliada de You Sushi"/><button className="light-nav right" onClick={()=>setGalleryIndex((galleryIndex+1)%gallery.length)}><ChevronRight/></button></div>}
-
-    {cartOpen&&<div className="cart-overlay" onMouseDown={e=>e.target===e.currentTarget&&setCartOpen(false)}><aside className="cart-drawer" aria-label="Pedido"><div className="cart-header"><div><p>{orderStep==='cart'?'Tu pedido':orderStep==='details'?'Datos del pedido':'Resumen'}</p><span>{count} productos</span></div><button onClick={()=>setCartOpen(false)}><X/></button></div>
-      {orderStep==='cart'&&(!cartItems.length?<div className="empty-cart"><ShoppingBag/><h3>Tu pedido está vacío</h3><p>Añade tus platos favoritos desde la carta.</p><button className="btn red" onClick={()=>{setCartOpen(false);scrollTo('carta')}}>Explorar la carta</button></div>:<><div className="cart-items">{cartItems.map(p=><div className="cart-item" key={p.id}><SafeImage src={p.image} alt={p.name}/><div><strong>{p.name}</strong><span>{p.price.toFixed(2).replace('.',',')} €</span><div className="qty"><button onClick={()=>changeQty(p.id,-1)}><Minus size={14}/></button><b>{cart[p.id]}</b><button onClick={()=>changeQty(p.id,1)}><Plus size={14}/></button></div></div><button className="remove" onClick={()=>changeQty(p.id,-cart[p.id])}><Trash2 size={16}/></button></div>)}</div><div className="cart-summary"><div><span>Subtotal</span><strong>{total.toFixed(2).replace('.',',')} €</strong></div><div><span>Total</span><strong>{total.toFixed(2).replace('.',',')} €</strong></div></div><div className="cart-actions"><button className="btn red" onClick={()=>setOrderStep('details')}>Continuar pedido <ArrowRight size={17}/></button><button className="clear" onClick={()=>setCart({})}>Vaciar pedido</button></div></>)}
-      {orderStep==='details'&&<div className="order-form"><label>Nombre*<input value={order.name} onChange={e=>setOrder({...order,name:e.target.value})}/></label><label>Teléfono*<input type="tel" value={order.phone} onChange={e=>setOrder({...order,phone:e.target.value})}/></label><label>Modalidad<select value={order.mode} onChange={e=>setOrder({...order,mode:e.target.value})}><option>Recoger en el restaurante</option><option>Consultar entrega a domicilio</option></select></label><label>Hora deseada<input type="time" value={order.time} onChange={e=>setOrder({...order,time:e.target.value})}/></label><label>Observaciones<textarea value={order.notes} onChange={e=>setOrder({...order,notes:e.target.value})}/></label><label>Alergias o indicaciones<textarea value={order.allergies} onChange={e=>setOrder({...order,allergies:e.target.value})}/></label><p className="pending-note">El pedido quedará pendiente de confirmación por el restaurante.</p><div className="order-form-actions"><button className="btn outline" onClick={()=>setOrderStep('cart')}>Volver</button><button className="btn red" disabled={!order.name.trim()||!/^[+()\d\s-]{9,}$/.test(order.phone)} onClick={()=>setOrderStep('summary')}>Ver resumen</button></div></div>}
-      {orderStep==='summary'&&<div className="order-summary"><div className="summary-client"><strong>{order.name}</strong><span>{order.phone}</span><span>{order.mode}</span>{order.time&&<span>Hora: {order.time}</span>}</div><div className="summary-items">{cartItems.map(p=><div key={p.id}><span>{cart[p.id]} × {p.name}</span><strong>{(cart[p.id]*p.price).toFixed(2).replace('.',',')} €</strong></div>)}</div><div className="summary-total"><span>Total</span><strong>{total.toFixed(2).replace('.',',')} €</strong></div>{order.notes&&<p><strong>Observaciones:</strong> {order.notes}</p>}<p><strong>Alergias:</strong> {order.allergies||'Ninguna indicada'}</p><p className="pending-note">El pedido no queda confirmado hasta que el restaurante responda.</p><div className="cart-actions"><button className="btn copy" onClick={copyOrder}>Copiar pedido</button><button className="btn call" onClick={()=>window.location.href=`tel:${restaurant.phoneInternational}`}><Phone size={16}/> Llamar al restaurante</button><button className="clear" onClick={()=>setOrderStep('details')}>Modificar datos</button></div>{copyFeedback&&<p className="copy-feedback" role="status">{copyFeedback}</p>}</div>}
-    </aside></div>}
-  </>;
+            {orderStep === 'summary' && (
+              <div className="order-summary">
+                <div className="summary-client">
+                  <strong>{order.name}</strong>
+                  <span>{order.phone}</span>
+                  <span>{order.mode}</span>
+                  {order.time && <span>Hora: {order.time}</span>}
+                </div>
+                <div className="summary-items">
+                  {cartItems.map((product) => (
+                    <div key={product.id}>
+                      <span>{cart[product.id]} × {product.name}</span>
+                      <strong>{formatPrice(cart[product.id] * product.price)}</strong>
+                    </div>
+                  ))}
+                </div>
+                <div className="summary-total">
+                  <span>Total orientativo · demo</span><strong>{formatPrice(total)}</strong>
+                </div>
+                {order.notes && <p><strong>Observaciones:</strong> {order.notes}</p>}
+                <p><strong>Alergias:</strong> {order.allergies || 'Ninguna indicada'}</p>
+                <p className="pending-note">El pedido no queda confirmado hasta que el restaurante responda.</p>
+                <div className="cart-actions">
+                  <a className="btn whatsapp" href={whatsappUrl(orderText())} target="_blank" rel="noreferrer">
+                    <MessageCircle size={17} aria-hidden="true" /> Preparar en WhatsApp
+                  </a>
+                  <button className="btn copy" type="button" onClick={() => copyText(orderText(), 'Pedido copiado.')}>
+                    Copiar pedido
+                  </button>
+                  <a className="btn call" href={`tel:${restaurant.phoneInternational}`}>
+                    <Phone size={16} aria-hidden="true" /> Llamar al restaurante
+                  </a>
+                  <button className="clear" type="button" onClick={() => setOrderStep('details')}>Modificar datos</button>
+                </div>
+                {copyFeedback && <p className="copy-feedback" role="status">{copyFeedback}</p>}
+              </div>
+            )}
+          </aside>
+        </div>
+      )}
+    </>
+  );
 }
