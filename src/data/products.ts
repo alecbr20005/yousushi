@@ -1,94 +1,42 @@
+import { foodImages } from './foodImages';
+import type { FoodImage } from './foodImages';
+
 export type Product = {
   id: number;
   name: string;
-  category: string;
-  price: number;
   description: string;
-  ingredients: string;
-  pieces?: string;
-  allergens: string;
-  tags: string[];
-  verified: boolean;
+  image: FoodImage;
 };
 
-
 export const products: Product[] = [
-  {id:1,name:'Sonomono',category:'Entrantes',price:4.95,description:'Ensalada japonesa tradicional.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:2,name:'Ensalada wakame',category:'Ensaladas',price:6.9,description:'Ensalada de algas wakame sazonada.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Vegetariano'],verified:false},
-  {id:3,name:'Edamame',category:'Entrantes',price:6,description:'Vainas de soja al vapor.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Vegetariano'],verified:false},
-  {id:4,name:'Harumi',category:'Entrantes',price:4.5,description:'Entrante de la carta You Sushi.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:5,name:'Gyoza',category:'Entrantes',price:5,description:'Empanadillas japonesas cocinadas al vapor y plancha.',ingredients:'Pendiente de validacion por el restaurante.',pieces:'5 uds.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:6,name:'Yakiroti',category:'Entrantes',price:6.5,description:'Brocheta japonesa a la parrilla.',ingredients:'Pendiente de validacion por el restaurante.',pieces:'2 uds.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:7,name:'Ramen',category:'Sopas y ramen',price:7.5,description:'Sopa japonesa de fideos con caldo y acompañamientos.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:8,name:'Sopa udon',category:'Sopas y ramen',price:9.5,description:'Fideos udon en caldo caliente.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:9,name:'Gohan',category:'Platos calientes',price:2.8,description:'Arroz japonés al vapor.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Vegetariano'],verified:false},
-  {id:10,name:'Arroz frito',category:'Platos calientes',price:5,description:'Arroz salteado al estilo japonés.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:11,name:'Yakisoba',category:'Platos calientes',price:7.5,description:'Fideos yakisoba salteados con verduras y salsa.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:12,name:'Tartar de salmón',category:'Platos calientes',price:10.5,description:'Salmón fresco picado y aliñado.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:13,name:'Kimuchi de atún o salmón',category:'Platos calientes',price:11.9,description:'Selección de atún o salmón con kimuchi.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado','Picante'],verified:false},
-  {id:14,name:'Tartar de atún',category:'Platos calientes',price:12.5,description:'Atún picado y aliñado al estilo japonés.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:15,name:'Yasai',category:'Platos calientes',price:7.8,description:'Selección de verduras preparadas al estilo japonés.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Vegetariano'],verified:false},
-  {id:16,name:'Torino karake',category:'Frituras y tempuras',price:8.8,description:'Pollo crujiente con salsa karake.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:17,name:'Pato frito laqueado',category:'Frituras y tempuras',price:14.9,description:'Pato frito laqueado con acabado crujiente.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:18,name:'Ebi Frajy',category:'Frituras y tempuras',price:11.9,description:'Langostinos fritos crujientes.',pieces:'6 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene marisco'],verified:false},
-  {id:19,name:'Tempura verduras',category:'Frituras y tempuras',price:10.9,description:'Verduras rebozadas en tempura ligera.',pieces:'7 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Vegetariano'],verified:false},
-  {id:20,name:'Tempura mixta',category:'Frituras y tempuras',price:11.9,description:'Selección crujiente de marisco y verduras.',pieces:'6 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene marisco'],verified:false},
-  {id:21,name:'Tempura mix You',category:'Frituras y tempuras',price:13.9,description:'Selección especial de tempura de la casa.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Especial'],verified:false},
-  {id:22,name:'Arroz con anguila',category:'Platos calientes',price:15.9,description:'Arroz acompañado de anguila a la plancha.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:23,name:'Teriyaki de pollo',category:'Platos calientes',price:9.9,description:'Pollo a la plancha con salsa teriyaki.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:24,name:'Entrecot Mix You',category:'Platos calientes',price:14.9,description:'Entrecot a la plancha con preparación japonesa.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Especial'],verified:false},
-  {id:25,name:'Solomillo',category:'Platos calientes',price:14.9,description:'Solomillo a la plancha.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:26,name:'Tataki de atún',category:'Platos calientes',price:14.9,description:'Atún sellado por fuera y tierno por dentro.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado','Especial'],verified:false},
-  {id:27,name:'Ika',category:'Nigiris',price:2.7,description:'Nigiri de calamar.',pieces:'1 pieza',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:28,name:'Tako',category:'Nigiris',price:2.7,description:'Nigiri de pulpo.',pieces:'1 pieza',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:29,name:'Tamago',category:'Nigiris',price:2.7,description:'Nigiri de tortilla japonesa.',pieces:'1 pieza',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Vegetariano'],verified:false},
-  {id:30,name:'Maguro',category:'Nigiris',price:2.8,description:'Nigiri de atún.',pieces:'1 pieza',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:31,name:'Ebi',category:'Nigiris',price:3.2,description:'Nigiri de langostino cocido.',pieces:'1 pieza',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene marisco'],verified:false},
-  {id:32,name:'Sake',category:'Nigiris',price:2.8,description:'Nigiri de salmón.',pieces:'1 pieza',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:33,name:'Pez mantequilla',category:'Nigiris',price:2.8,description:'Nigiri de pez mantequilla.',pieces:'1 pieza',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:34,name:'Sake cheese',category:'Nigiris',price:3,description:'Nigiri de salmón con queso.',pieces:'1 pieza',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:35,name:'Anago',category:'Nigiris',price:3.8,description:'Nigiri de anguila dulce.',pieces:'1 pieza',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:36,name:'Tai',category:'Nigiris',price:2.8,description:'Nigiri de dorada.',pieces:'1 pieza',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:37,name:'Maki de salmón',category:'Maki',price:4.9,description:'Maki clásico de salmón.',pieces:'6 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:38,name:'Maki aguacate',category:'Maki',price:4.9,description:'Maki sencillo de aguacate.',pieces:'6 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Vegetariano'],verified:false},
-  {id:39,name:'Teka',category:'Maki',price:4.9,description:'Maki de atún.',pieces:'6 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:40,name:'Kappa',category:'Maki',price:4.9,description:'Maki de pepino.',pieces:'6 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Vegetariano'],verified:false},
-  {id:41,name:'Langostinos y aguacate',category:'Maki',price:4.9,description:'Maki relleno de langostino y aguacate.',pieces:'6 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene marisco'],verified:false},
-  {id:42,name:'Salmón tobiko',category:'Maki',price:6.9,description:'Maki de salmón con huevas tobiko.',pieces:'6 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado','Especial'],verified:false},
-  {id:43,name:'Poke de pollo',category:'Pokes',price:9.9,description:'Bol hawaiano con pollo e ingredientes frescos.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:44,name:'Poke de salmón',category:'Pokes',price:11.9,description:'Bol hawaiano con salmón fresco.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:45,name:'Poke de atún',category:'Pokes',price:12.9,description:'Bol hawaiano con atún fresco.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:46,name:'Atún',category:'Sashimi',price:.95,description:'Sashimi de atún.',pieces:'Por pieza',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:47,name:'Salmón picante',category:'Sashimi',price:.95,description:'Sashimi de salmón con toque picante.',pieces:'Por pieza',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado','Picante'],verified:false},
-  {id:48,name:'Pez mantequilla',category:'Sashimi',price:.95,description:'Sashimi de pez mantequilla.',pieces:'Por pieza',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:49,name:'Maki sushi mixto',category:'Combinados y bandejas',price:7.9,description:'Selección variada de maki.',pieces:'6 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Combos'],verified:false},
-  {id:50,name:'Sushi mixto',category:'Combinados y bandejas',price:12.9,description:'Selección variada de sushi y nigiri.',pieces:'12 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado','Combos'],verified:false},
-  {id:51,name:'Sashimi mixto',category:'Combinados y bandejas',price:18,description:'Selección variada de sashimi fresco.',pieces:'18 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado','Combos'],verified:false},
-  {id:52,name:'California',category:'California rolls',price:9.9,description:'California roll clásico.',pieces:'10 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Especial'],verified:false},
-  {id:53,name:'Futomaki',category:'Maki',price:9.9,description:'Maki grueso con relleno variado.',pieces:'8 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:54,name:'Sushi bar roll',category:'Especialidades',price:13.9,description:'Roll especial de la casa.',pieces:'10 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Especial'],verified:false},
-  {id:55,name:'Honshu',category:'Especialidades',price:10.9,description:'Especialidad de maki.',pieces:'10 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Especial'],verified:false},
-  {id:56,name:'Kyoto roll',category:'Especialidades',price:12.9,description:'Roll inspirado en Kyoto.',pieces:'10 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Especial'],verified:false},
-  {id:57,name:'Tokio roll',category:'Especialidades',price:12.9,description:'Roll inspirado en Tokio.',pieces:'10 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Especial'],verified:false},
-  {id:58,name:'Dragon Fly Osaka',category:'Especialidades',price:10.9,description:'Especialidad de maki de Osaka.',pieces:'10 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Especial'],verified:false},
-  {id:59,name:'Yokohama',category:'Especialidades',price:12.9,description:'Especialidad de maki de Yokohama.',pieces:'10 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Especial'],verified:false},
-  {id:60,name:'California rainbow',category:'Especialidades',price:12.9,description:'California cubierto con una selección de pescado.',pieces:'10 uds.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado','Especial'],verified:false},
-  {id:61,name:'Refresco',category:'Bebidas',price:2,description:'Bebida refrescante.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:62,name:'Cerveza',category:'Bebidas',price:2,description:'Cerveza fría.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-  {id:63,name:'Agua',category:'Bebidas',price:2,description:'Agua mineral.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:[],verified:false},
-];
-
-export const menus: Product[] = [
-  {id:101,name:'Nigiri mixto',category:'Menús individuales',price:11,pieces:'8 piezas',description:'2 atún, 2 salmón, 2 ebi, 1 lubina y tamago.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:102,name:'Mix lunch',category:'Menús individuales',price:12,pieces:'14 piezas',description:'Nigiri y sashimi de atún y salmón con pez mantequilla.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:103,name:'Menú mixto',category:'Menús individuales',price:22,pieces:'17 piezas',description:'Nigiri variado, sashimi y California de salmón.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado','Combos'],verified:false},
-  {id:104,name:'Temaki mixto',category:'Menús individuales',price:19,pieces:'4 temakis',description:'1 California, 1 atún y 2 salmón.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:105,name:'Maki mixto',category:'Menús individuales',price:12.5,pieces:'18 piezas',description:'6 salmón, 6 atún y 6 aguacate.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:106,name:'Sushi bar mix',category:'Menús individuales',price:16,pieces:'16 piezas',description:'2 nigiri de salmón, 2 atún, 6 maki salmón y 6 sashimi.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:107,name:'Sushi bar',category:'Menús individuales',price:18,pieces:'18 piezas',description:'Maki aguacate y salmón, y California atún y mayonesa.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado'],verified:false},
-  {id:108,name:'Menú love',category:'Menús para compartir',price:22.9,pieces:'24 piezas',description:'Nigiri variado, maki aguacate y maki salmón.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado','Combos'],verified:false},
-  {id:109,name:'Menú trío',category:'Menús para compartir',price:43,pieces:'44 piezas',description:'Nigiri, maki y California en una selección extensa.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado','Combos'],verified:false},
-  {id:110,name:'Menú friends',category:'Menús para compartir',price:82,pieces:'88 piezas',description:'Selección grande de nigiri, maki y California para compartir.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado','Combos'],verified:false},
-  {id:111,name:'Menú especial',category:'Menús para compartir',price:43,pieces:'44 piezas',description:'Nigiri variado, California y sashimi.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado','Especial'],verified:false},
-  {id:112,name:'Bandeja roja',category:'Combinados y bandejas',price:55,pieces:'56 piezas',description:'8 nigiri variado, 24 maki variado y 24 California variado.',ingredients:'Pendiente de validacion por el restaurante.',allergens:'Pendiente de confirmacion; consultar directamente al restaurante.',tags:['Contiene pescado','Combos'],verified:false},
+  {
+    id: 1,
+    name: 'Sushi mixto',
+    description: 'Una selección de sushi para disfrutar en cualquier ocasión.',
+    image: foodImages[0],
+  },
+  {
+    id: 2,
+    name: 'Menú Trío',
+    description: 'Una propuesta pensada para compartir.',
+    image: foodImages[1],
+  },
+  {
+    id: 3,
+    name: 'Menú Friends',
+    description: 'Una mesa de sushi para disfrutar en grupo.',
+    image: foodImages[2],
+  },
+  {
+    id: 4,
+    name: 'Ramen',
+    description: 'Un clásico de la cocina japonesa.',
+    image: foodImages[3],
+  },
+  {
+    id: 5,
+    name: 'Gyozas',
+    description: 'Un bocado japonés para compartir.',
+    image: foodImages[4],
+  },
 ];
